@@ -1,15 +1,18 @@
 # 🧠 Verdict AI
 
-Explainable Multi-Document RAG System built using Streamlit, LangChain, FAISS and HuggingFace Embeddings.
+An Explainable Retrieval-Augmented Generation (RAG) system for document understanding and evidence-backed question answering.
 
 ## Features
 
-- PDF Upload & Processing
-- Semantic Search using FAISS
-- Retrieval-Augmented Generation (RAG)
-- Source Attribution
-- Multi-Document Analysis
-- Explainable AI Pipeline
+✅ PDF Processing
+
+✅ Semantic Search using FAISS
+
+✅ Source Attribution
+
+✅ Multi-Document Retrieval
+
+✅ Explainable AI Pipeline
 
 ## Tech Stack
 
@@ -19,7 +22,6 @@ Explainable Multi-Document RAG System built using Streamlit, LangChain, FAISS an
 - FAISS
 - HuggingFace Embeddings
 - PDFPlumber
-
 ## Project Structure
 
 app.py
