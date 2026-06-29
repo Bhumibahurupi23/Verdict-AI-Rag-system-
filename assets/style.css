@@ -1,0 +1,47 @@
+.main-header{
+    font-size:60px;
+    font-weight:700;
+    color:white;
+}
+
+.subtitle{
+    color:#A8B89F;
+    font-size:18px;
+    margin-bottom:30px;
+}
+
+.metric-card{
+    background:#18201A;
+    border-radius:20px;
+    padding:20px;
+    text-align:center;
+    border:1px solid rgba(139,174,90,.15);
+    box-shadow:0 0 20px rgba(139,174,90,.08);
+}
+
+.metric-card h1{
+    color:white;
+}
+
+.metric-card h3{
+    color:#A8B89F;
+}
+
+.answer-card{
+    background:#18201A;
+    border-radius:20px;
+    padding:25px;
+    border:1px solid rgba(139,174,90,.15);
+}
+
+.source-card{
+    background:#18201A;
+    border-radius:15px;
+    padding:15px;
+    margin-bottom:10px;
+}
+section[data-testid="stFileUploader"]{
+    border:2px dashed #8BAE5A;
+    border-radius:20px;
+    padding:20px;
+}
