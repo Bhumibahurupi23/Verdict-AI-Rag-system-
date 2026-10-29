@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verdict AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafaf9;--panel:#fff;--ink:#1c1917;--muted:#78716c;--line:#e7e5e4;--accent:#4f46e5;--accent-soft:#eef2ff;--warn:#fef3c7}
+@media(prefers-color-scheme:dark){:root{--bg:#0c0a09;--panel:#171412;--ink:#f5f5f4;--muted:#a8a29e;--line:#292524;--accent:#818cf8;--accent-soft:#1e1b4b;--warn:#422006}}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;font-size:15px}
+aside{width:290px;background:var(--panel);border-right:1px solid var(--line);padding:24px 18px;display:flex;flex-direction:column;gap:18px}
+.logo{font-weight:600;font-size:18px;letter-spacing:-.02em}
+.logo span{color:var(--accent)}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:22px 12px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.drop b{display:block;color:var(--ink);font-weight:500;margin-bottom:4px}
+h4{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+#docs{display:flex;flex-direction:column;gap:6px;overflow:auto}
+.doc{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:13px}
+.doc div{overflow:hidden}
+.doc .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.doc .m{color:var(--muted);font-size:11px}
+.doc button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px}
+.doc button:hover{color:#dc2626}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+#chat{flex:1;overflow:auto;padding:36px 20px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.empty{margin-top:14vh;text-align:center}
+.empty h1{font-size:28px;font-weight:600;letter-spacing:-.03em}
+.empty p{color:var(--muted);margin-top:8px}
+.msg.user{align-self:flex-end;background:var(--accent);color:#fff;padding:10px 15px;border-radius:16px 16px 4px 16px;max-width:80%}
+.msg.bot{line-height:1.65}
+.msg.bot.nf{background:var(--warn);padding:12px 15px;border-radius:12px}
+.cite{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:600;border:0;cursor:pointer;margin:0 2px;vertical-align:1px}
+.sources{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.src{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 13px;font-size:13px}
+.src .h{color:var(--muted);font-size:11px;margin-bottom:4px}
+.src mark{background:var(--accent-soft);color:var(--ink);padding:1px 2px;border-radius:3px}
+.src.flash{border-color:var(--accent)}
+.bar{padding:16px 20px 24px}
+.box{max-width:720px;margin:0 auto;display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 16px;box-shadow:0 1px 8px rgba(0,0,0,.04)}
+.box input{flex:1;border:0;outline:0;background:none;color:var(--ink);font:inherit}
+.box button{background:var(--accent);color:#fff;border:0;border-radius:9px;padding:9px 18px;font:inherit;font-weight:500;cursor:pointer}
+.box button:disabled{opacity:.5}
+.dots{color:var(--muted)}
+@media(max-width:760px){aside{display:none}}
+</style>
+</head>
+<body>
+<aside>
+  <div class="logo">Verdict<span>AI</span></div>
+  <label class="drop" id="drop">
+    <b>Drop documents here</b>PDF, DOCX, TXT up to 15 MB
+    <input type="file" id="file" multiple accept=".pdf,.docx,.txt,.md" hidden>
+  </label>
+  <h4>Your documents</h4>
+  <div id="docs"></div>
+</aside>
+<main>
+  <div id="chat"><div class="wrap" id="wrap">
+    <div class="empty" id="empty"><h1>Ask your documents anything.</h1><p>Answers come only from what you upload, with proof.</p></div>
+  </div></div>
+  <div class="bar"><div class="box">
+    <input id="q" placeholder="Ask a question about your documents..." autocomplete="off">
+    <button id="send">Ask</button>
+  </div></div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let wid = localStorage.getItem("verdict_wid");
+if (!wid) { wid = crypto.randomUUID(); localStorage.setItem("verdict_wid", wid); }
+
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function renderDocs(docs) {
+  $("docs").innerHTML = docs.length ? docs.map(d => `
+    <div class="doc"><div><div class="n">${esc(d.name)}</div>
+    <div class="m">${d.pages} pages · ${d.chunks} sections</div></div>
+    <button title="Remove" onclick="removeDoc('${d.id}')">×</button></div>`).join("")
+    : '<div class="m" style="color:var(--muted);font-size:13px">Nothing yet.</div>';
+}
+
+async function loadDocs() {
+  const r = await fetch(`/api/docs?workspace_id=${wid}`);
+  renderDocs((await r.json()).docs);
+}
+
+async function upload(files) {
+  if (!files.length) return;
+  const fd = new FormData();
+  fd.append("workspace_id", wid);
+  [...files].forEach(f => fd.append("files", f));
+  $("docs").innerHTML = '<div class="dots">Reading and indexing…</div>';
+  const r = await fetch("/api/upload", { method: "POST", body: fd });
+  const data = await r.json();
+  renderDocs(data.docs || []);
+  const errs = (data.results || []).filter(x => x.error);
+  if (errs.length) alert(errs.map(e => `${e.name}: ${e.error}`).join("\n"));
+}
+
+async function removeDoc(id) {
+  const r = await fetch(`/api/docs/${id}?workspace_id=${wid}`, { method: "DELETE" });
+  renderDocs((await r.json()).docs);
+}
+
+const drop = $("drop");
+$("file").onchange = e => upload(e.target.files);
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); };
+
+function add(html, cls) {
+  $("empty")?.remove();
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.innerHTML = html;
+  $("wrap").appendChild(d);
+  $("chat").scrollTop = $("chat").scrollHeight;
+  return d;
+}
+
+function renderAnswer(data) {
+  const uid = Math.random().toString(36).slice(2, 7);
+  let text = esc(data.answer).replace(/\[(\d+)\]/g,
+    (m, n) => `<button class="cite" onclick="flash('${uid}-${n}')">${n}</button>`);
+  let html = `<div>${text}</div>`;
+  if (data.sources.length) {
+    html += '<div class="sources">' + data.sources.map(s => {
+      const t = esc(s.text), qt = esc(s.quote);
+      const shown = t.includes(qt) ? t.replace(qt, `<mark>${qt}</mark>`) : `<mark>${qt}</mark>`;
+      return `<div class="src" id="${uid}-${s.id}"><div class="h">[${s.id}] ${esc(s.source)} · page ${s.page}</div>${shown}</div>`;
+    }).join("") + "</div>";
+  }
+  return html;
+}
+
+function flash(id) {
+  const el = $(id); if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1200);
+}
+
+async function ask() {
+  const q = $("q").value.trim();
+  if (!q) return;
+  $("q").value = ""; $("send").disabled = true;
+  add(esc(q), "user");
+  const loading = add('<span class="dots">Searching your documents…</span>', "bot");
+  try {
+    const r = await fetch("/api/ask", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspace_id: wid, question: q })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || "Request failed");
+    loading.innerHTML = renderAnswer(data);
+    if (!data.answerable) loading.classList.add("nf");
+  } catch (e) {
+    loading.innerHTML = "⚠️ " + esc(e.message);
+  }
+  $("send").disabled = false; $("q").focus();
+  $("chat").scrollTop = $("chat").scrollHeight;
+}
+
+$("send").onclick = ask;
+$("q").onkeydown = e => { if (e.key === "Enter") ask(); };
+loadDocs();
+</script>
+</body>
+</html>
