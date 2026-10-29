@@ -1,6 +1,8 @@
 # 🧠 Verdict AI
 
 Explainable Multi-Document RAG System built using Streamlit, LangChain, FAISS and HuggingFace Embeddings.
+## 🔗 Live Demo
+[Try Verdict AI here](https://your-app.onrender.com)
 
 ## Features
 
